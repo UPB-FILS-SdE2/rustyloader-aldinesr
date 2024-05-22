@@ -10,7 +10,7 @@ extern "C" fn sigsegv_handler(_signal: c_int, siginfo: *mut siginfo_t, _extra: *
 }
 
 fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
-    // read ELF segments
+    // read ELF segments 
 
     // print segments
 
