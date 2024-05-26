@@ -27,16 +27,16 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: setup
-        setup-command: git clone https://github.com/UPB-FILS-SdE2/devoir-3-tests.git
-        command: cd devoir-3-tests/inputs && make
+        setup-command: git clone https://github.com/UPB-FILS-SdE2/devoir-4-tests.git
+        command: cd devoir-4-tests/inputs && make
         timeout: 10
     - name: bss code
       id: bss-code
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: bss code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh bss
-        command: cd devoir-3-tests && timeout 5 ./verify.sh bss code
+        setup-command: cd /devoir-4-tests && timeout 5 ./run.sh bss
+        command: cd devoir-4-tests && timeout 5 ./verify.sh bss code
         timeout: 10
         max-score: 1
     - name: bss segements
@@ -45,7 +45,7 @@ jobs:
       with:
         test-name: bss segements
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh bss segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh bss segments
         timeout: 10
         max-score: 3
     - name: bss out
@@ -54,7 +54,7 @@ jobs:
       with:
         test-name: bss out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh bss out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh bss out
         timeout: 10
         max-score: 6
     - name: check_exec code
@@ -62,8 +62,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: check_exec code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh check_exec
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_exec code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh check_exec
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_exec code
         timeout: 10
         max-score: 1
     - name: check_exec segments
@@ -72,7 +72,7 @@ jobs:
       with:
         test-name: check_exec segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_exec segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_exec segments
         timeout: 10
         max-score: 3
     - name: check_exec
@@ -81,7 +81,7 @@ jobs:
       with:
         test-name: check_exec
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_exec out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_exec out
         timeout: 10
         max-score: 6
     - name: check_perm code
@@ -89,8 +89,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: check_perm code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh check_perm
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_perm code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh check_perm
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_perm code
         timeout: 10
         max-score: 1
     - name: check_perm segments
@@ -99,7 +99,7 @@ jobs:
       with:
         test-name: check_perm segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_perm segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_perm segments
         timeout: 10
         max-score: 3
     - name: check_perm out
@@ -108,7 +108,7 @@ jobs:
       with:
         test-name: check_perm out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh check_perm out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh check_perm out
         timeout: 10
         max-score: 6
     - name: data_bss code
@@ -116,8 +116,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: data_bss code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh data_bss
-        command: cd devoir-3-tests && timeout 5 ./verify.sh data_bss code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh data_bss
+        command: cd devoir-4-tests && timeout 5 ./verify.sh data_bss code
         timeout: 10
         max-score: 1
     - name: data_bss segments
@@ -126,7 +126,7 @@ jobs:
       with:
         test-name: data_bss segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh data_bss segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh data_bss segments
         timeout: 10
         max-score: 3
     - name: data_bss out
@@ -135,7 +135,7 @@ jobs:
       with:
         test-name: data_bss out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh data_bss out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh data_bss out
         timeout: 10
         max-score: 6
     - name: hello code
@@ -143,8 +143,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: hello code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh hello
-        command: cd devoir-3-tests && timeout 5 ./verify.sh data_bss code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh hello
+        command: cd devoir-4-tests && timeout 5 ./verify.sh data_bss code
         timeout: 10
         max-score: 1
     - name: hello segments
@@ -153,7 +153,7 @@ jobs:
       with:
         test-name: hello segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh hello segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh hello segments
         timeout: 10
         max-score: 3
     - name: hello out
@@ -162,7 +162,7 @@ jobs:
       with:
         test-name: hello out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh hello out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh hello out
         timeout: 10
         max-score: 6
     - name: inv_perm code
@@ -170,8 +170,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: inv_perm code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh inv_perm
-        command: cd devoir-3-tests && timeout 5 ./verify.sh inv_perm code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh inv_perm
+        command: cd devoir-4-tests && timeout 5 ./verify.sh inv_perm code
         timeout: 10
         max-score: 1
     - name: inv_perm segments
@@ -180,7 +180,7 @@ jobs:
       with:
         test-name: inv_perm segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh inv_perm segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh inv_perm segments
         timeout: 10
         max-score: 3
     - name: inv_perm out
@@ -189,7 +189,7 @@ jobs:
       with:
         test-name: inv_perm out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh inv_perm out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh inv_perm out
         timeout: 10
         max-score: 6
     - name: no_perm code
@@ -197,7 +197,7 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: no_perm code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh no_perm
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh no_perm
         command: cd devoir-3-tests && timeout 5 ./verify.sh no_perm code
         timeout: 10
         max-score: 1
@@ -207,7 +207,7 @@ jobs:
       with:
         test-name: no_perm segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh no_perm segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh no_perm segments
         timeout: 10
         max-score: 3
     - name: no_perm out
@@ -216,7 +216,7 @@ jobs:
       with:
         test-name: no_perm out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh no_perm out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh no_perm out
         timeout: 10
         max-score: 6
     - name: qsort code
@@ -224,8 +224,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: qsort code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh qsort
-        command: cd devoir-3-tests && timeout 5 ./verify.sh qsort code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh qsort
+        command: cd devoir-4-tests && timeout 5 ./verify.sh qsort code
         timeout: 10
         max-score: 2
     - name: qsort segments
@@ -234,7 +234,7 @@ jobs:
       with:
         test-name: qsort segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh qsort segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh qsort segments
         timeout: 10
         max-score: 6
     - name: qsort out
@@ -243,7 +243,7 @@ jobs:
       with:
         test-name: qsort out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh qsort out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh qsort out
         timeout: 10
         max-score: 12
     - name: sum code
@@ -251,8 +251,8 @@ jobs:
       uses: classroom-resources/autograding-command-grader@v1
       with:
         test-name: sum code
-        setup-command: cd devoir-3-tests && timeout 5 ./run.sh sum
-        command: cd devoir-3-tests && timeout 5 ./verify.sh sum code
+        setup-command: cd devoir-4-tests && timeout 5 ./run.sh sum
+        command: cd devoir-4-tests && timeout 5 ./verify.sh sum code
         timeout: 10
         max-score: 1
     - name: sum segments
@@ -261,7 +261,7 @@ jobs:
       with:
         test-name: sum segments
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh sum segments
+        command: cd devoir-4-tests && timeout 5 ./verify.sh sum segments
         timeout: 10
         max-score: 3
     - name: sum out
@@ -270,7 +270,7 @@ jobs:
       with:
         test-name: sum out
         setup-command: ''
-        command: cd devoir-3-tests && timeout 5 ./verify.sh sum out
+        command: cd devoir-4-tests && timeout 5 ./verify.sh sum out
         timeout: 10
         max-score: 6
     - name: Autograding Reporter
