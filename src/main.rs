@@ -1,6 +1,14 @@
 use nix::libc::siginfo_t;
 use std::error::Error;
 use std::os::raw::{c_int, c_void};
+use object::{Object, ObjectSegment, elf::ElfFile};
+use nix::libc::{signal, SIGSEGV, sigaction, SA_SIGINFO, sigemptyset, sigaction as SigAction, siginfo_t, sighandler_t};
+use std::fs::File;
+use std::io::Read;
+use std::os::unix::io::AsRawFd;
+use std::error::Error;
+use std::os::raw::{c_int, c_void};
+use std::mem;
 
 mod runner;
 
@@ -8,9 +16,7 @@ extern "C" fn sigsegv_handler(_signal: c_int, siginfo: *mut siginfo_t, _extra: *
     let address = unsafe { (*siginfo).si_addr() } as usize;
     // map pages
     if let Some(segment) = find_segment_containing(address) {
-        // Step 4: Check if the access is valid.
         if !is_access_valid(segment, address) {
-            eprintln!("Unauthorized access attempt at address {:x}", address);
             std::process::exit(-200);
         }
         unsafe {
@@ -25,12 +31,10 @@ extern "C" fn sigsegv_handler(_signal: c_int, siginfo: *mut siginfo_t, _extra: *
             );
 
             if result.is_err() {
-                eprintln!("Failed to map memory at address {:x}", address);
                 std::process::exit(-200);
             }
         }
     } else {
-        eprintln!("Invalid memory access at address {:x}", address);
         std::process::exit(-200);
     }
 
@@ -44,9 +48,32 @@ fn is_access_valid(segment: &Segment, address: usize) -> bool {
 }
 fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
     // read ELF segments 
+    let mut file = File::open(filename)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    let elf = ElfFile::parse(&buffer)?;
 
     // print segments
-
+    let mut segments = vec![];
+    for segment in elf.segments() {
+        let address = segment.address();
+        let size = segment.size();
+        let offset = segment.file_range().0;
+        let length = segment.file_range().1;
+        let flags = segment.flags();
+        println!("#\taddress\t\tsize\toffset\tlength\tflags");
+        println!(
+            "{}\t{:#x}\t{}\t{:#x}\t{}\t{}",
+            segments.len(),
+            address,
+            size,
+            offset,
+            length,
+            format_flags(flags)
+        );
+        segments.push(segment);
+    }
     // determine base address
 
     // determine entry point
