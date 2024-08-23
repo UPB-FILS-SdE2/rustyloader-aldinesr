@@ -1,155 +1,101 @@
 use nix::libc::siginfo_t;
-use nix::sys::mman::{mmap, mprotect, MapFlags, ProtFlags};
-use nix::sys::signal::{sigaction, SigAction, SigHandler, SigSet, Signal};
-use nix::unistd::sysconf;
 use std::error::Error;
-use std::fmt;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
-use std::os::fd::AsRawFd;
 use std::os::raw::{c_int, c_void};
-use std::path::Path;
 
-use object::elf::*;
-use object::read::{elf, Endianness, ProgramHeader32};
-use object::Object;
+mod runner;
 
-static mut PAGE_SIZE: usize = 0;
-
-extern "C" fn sigsegv_handler(signal: c_int, siginfo: *mut siginfo_t, _extra: *mut c_void) {
+extern "C" fn sigsegv_handler(_signal: c_int, siginfo: *mut siginfo_t, _extra: *mut c_void) {
     let address = unsafe { (*siginfo).si_addr() } as usize;
+    // map pages
+    let si_addr = unsafe { (*info).si_addr() };
 
-    if address < 0x08048000 || address > 0xC0000000 {
-        eprintln!(
-            "Segmentation fault at 0x{:x} page 0x{:x} (invalid)",
-            address,
-            address & !(PAGE_SIZE - 1)
-        );
-        std::process::exit(56);
+    if is_invalid_access(address) {
+        eprintln!("Invalid memory access at address: {:#x}", address);
+        std::process::exit(-200);
     } else {
+        // Map the faulting page into memory with appropriate permissions
         unsafe {
-            let code = (*siginfo).si_code;
-            if code == 1 || code == 2 {
-                eprintln!(
-                    "Segmentation fault at 0x{:x} page 0x{:x} (access)",
-                    address,
-                    address & !(PAGE_SIZE - 1)
-                );
-                std::process::exit(56);
-            } else {
-                eprintln!("Unknown SEGV code: {}", code);
-            }
-
             mmap(
                 address as *mut c_void,
-                PAGE_SIZE,
-                ProtFlags::all(),
+                page_size as usize,
+                ProtFlags::PROT_READ | ProtFlags::PROT_WRITE, 
                 MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS | MapFlags::MAP_FIXED,
                 -1,
                 0,
-            )
-            .unwrap_or_else(|e| {
-                eprintln!(
-                    "Segmentation fault at 0x{:x} page 0x{:x} (access)",
-                    address,
-                    address & !(PAGE_SIZE - 1)
-                );
-                std::process::exit(56);
+            ).unwrap_or_else(|err| {
+                // eprintln!("error to map page: {:#?}", err);
+                std::process::exit(-1);
             });
         }
     }
 }
 
-fn display_segments(segments: &[ProgramHeader32<Endianness>]) {
-    eprintln!("Segments");
-    eprintln!("#\taddress\tsize\toffset\tlength\tflags");
-    for (i, segment) in segments.iter().enumerate() {
-        let p_vaddr = segment.p_vaddr(object::Endianness::Little) as usize;
-        let p_memsz = segment.p_memsz(object::Endianness::Little) as usize;
-        let p_offset = segment.p_offset(object::Endianness::Little) as usize;
-        let p_filesz = segment.p_filesz(object::Endianness::Little) as usize;
-        let p_flags = segment.p_flags(object::Endianness::Little) as usize;
-
-        let perms = SegmentPerms::from_number(p_flags);
-
-        eprintln!(
-            "{}\t0x{:08x}\t{}\t0x{:x}\t{}\t{}",
-            i, p_vaddr, p_memsz, p_offset, p_filesz, perms
-        );
-    }
-}
-
 fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
-    let mut file = File::open(filename)?;
-    let fd = file.as_raw_fd();
+    // read ELF segments
     let data = std::fs::read(filename)?;
-    let elf = elf::FileHeader32::<object::Endianness>::parse(&*data)?;
+    let elf = elf::FileHeader32::<Endianness>::parse(&*data)?;
     let endian = elf.endian()?;
 
-    let entry_point = elf.e_entry.get(object::Endianness::Little) as usize;
+    let entry_point = elf.e_entry.get(endian) as usize;
     let program_headers = elf.program_headers(endian, data.as_slice())?;
-    let load_segments: Vec<_> = program_headers
-        .iter()
-        .filter(|seg| seg.p_type.get(object::Endianness::Little) == 1)
-        .collect();
+    
+    // print segments
 
-    let base_address = load_segments
-        .iter()
-        .map(|seg| seg.p_vaddr.get(object::Endianness::Little) as usize)
-        .min()
-        .unwrap_or(usize::MAX);
-
-    display_segments(&load_segments);
-
-    eprintln!("Entry point {:x}", entry_point);
-    eprintln!("Base address {:x}", base_address);
-
-    unsafe {
-        PAGE_SIZE = sysconf(nix::unistd::SysconfVar::PAGE_SIZE)
-            .unwrap_or_else(|_| panic!("can't get page size"))
-            .unwrap_or(4096);
+    eprintln!("Segments:");
+    for segment in program_headers {
+        eprintln!("Segment type: {:#x}, vaddr: {:#x}, paddr: {:#x}", 
+            segment.p_type.get(endian), 
+            segment.p_vaddr.get(endian), 
+            segment.p_paddr.get(endian));
     }
+    for segment in program_headers {
+        if segment.p_type.get(endian) == elf::PT_LOAD {
+            let memsz = segment.p_memsz.get(endian) as usize;
+            let filesz = segment.p_filesz.get(endian) as usize;
 
-    let handler = SigHandler::SigAction(sigsegv_handler);
-    let action = SigAction::new(handler, SigSet::empty());
-    unsafe { sigaction(Signal::SIGSEGV, &action) }.expect("Failed to set signal handler");
+            let vaddr = segment.p_vaddr.get(endian) as usize;
 
-    // Load segments into memory
-    for segment in load_segments {
-        let p_offset = segment.p_offset(object::Endianness::Little) as usize;
-        let p_vaddr = segment.p_vaddr(object::Endianness::Little) as usize;
-        let p_memsz = segment.p_memsz(object::Endianness::Little) as usize;
-        let p_filesz = segment.p_filesz(object::Endianness::Little) as usize;
-        let p_flags = segment.p_flags(object::Endianness::Little) as usize;
+            unsafe {
+                let ptr = mmap(
+                    vaddr as *mut c_void,
+                    memsz,
+                    ProtFlags::PROT_WRITE, // Adjust as per segment flags
+                    MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS | MapFlags::MAP_FIXED,
+                    -1,
+                    0,
+                )?;
 
-        let actual_addr = p_vaddr - (p_vaddr % PAGE_SIZE);
-        let actual_offset = p_offset - (p_offset % PAGE_SIZE);
-
-        let segment_perms = SegmentPerms::from_number(p_flags);
-
-        unsafe {
-            mmap(
-                actual_addr as *mut c_void,
-                p_memsz,
-                segment_perms.to_flags(),
-                MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS | MapFlags::MAP_FIXED,
-                -1,
-                0,
-            )?;
-            file.seek(SeekFrom::Start(actual_offset as u64))?;
-            let mut segment_data = vec![0; p_filesz];
-            file.read_exact(&mut segment_data)?;
-            std::ptr::copy_nonoverlapping(segment_data.as_ptr(), actual_addr as *mut u8, p_filesz);
+            
+                if filesz > 0 {
+                    std::ptr::copy_nonoverlapping(
+                        data.as_ptr().add(segment.p_offset.get(endian) as usize),
+                        ptr as *mut u8,
+                        filesz
+                    );
+                }
+            }
         }
     }
 
-    // Execute entry point
-    let entry_func: extern "C" fn() = unsafe { std::mem::transmute(entry_point) };
-    entry_func();
+  
+    let handler = SigHandler::SigAction(sigsegv_handler);
+    let action = SigAction::new(handler, SaFlags::SA_SIGINFO, SigSet::empty());
+    unsafe { sigaction(Signal::SIGSEGV, &action)?; }
+
+    runner::exec_run(0, entry_point); 
 
     Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    exec(&std::env::args().nth(1).ok_or("Usage: <executable>")?)
+    // load ELF provided within the first argument
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <executable>", args[0]);
+        std::process::exit(1);
+    }
+
+    let filename = &args[1];
+    exec(filename)?;
+    Ok(())
 }
