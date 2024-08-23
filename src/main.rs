@@ -31,15 +31,14 @@ extern "C" fn sigsegv_handler(_signal: c_int, siginfo: *mut siginfo_t, _extra: *
 }
 
 fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
-    // read ELF segments
+    // Open the ELF file
     let data = std::fs::read(filename)?;
+
     let elf = elf::FileHeader32::<Endianness>::parse(&*data)?;
     let endian = elf.endian()?;
 
     let entry_point = elf.e_entry.get(endian) as usize;
     let program_headers = elf.program_headers(endian, data.as_slice())?;
-    
-    // print segments
 
     eprintln!("Segments:");
     for segment in program_headers {
@@ -48,24 +47,24 @@ fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
             segment.p_vaddr.get(endian), 
             segment.p_paddr.get(endian));
     }
+
+    let base_address = 0x08048000; 
     for segment in program_headers {
         if segment.p_type.get(endian) == elf::PT_LOAD {
             let memsz = segment.p_memsz.get(endian) as usize;
             let filesz = segment.p_filesz.get(endian) as usize;
-
             let vaddr = segment.p_vaddr.get(endian) as usize;
 
             unsafe {
                 let ptr = mmap(
                     vaddr as *mut c_void,
                     memsz,
-                    ProtFlags::PROT_WRITE, // Adjust as per segment flags
+                    ProtFlags::PROT_WRITE | ProtFlags::PROT_READ, 
                     MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS | MapFlags::MAP_FIXED,
                     -1,
                     0,
                 )?;
 
-            
                 if filesz > 0 {
                     std::ptr::copy_nonoverlapping(
                         data.as_ptr().add(segment.p_offset.get(endian) as usize),
@@ -73,16 +72,23 @@ fn exec(filename: &str) -> Result<(), Box<dyn Error>> {
                         filesz
                     );
                 }
+
+                if memsz > filesz {
+                    std::ptr::write_bytes(
+                        (ptr as *mut u8).add(filesz),
+                        0,
+                        memsz - filesz
+                    );
+                }
             }
         }
     }
 
-  
     let handler = SigHandler::SigAction(sigsegv_handler);
     let action = SigAction::new(handler, SaFlags::SA_SIGINFO, SigSet::empty());
     unsafe { sigaction(Signal::SIGSEGV, &action)?; }
 
-    runner::exec_run(0, entry_point); 
+    runner::exec_run(base_address, entry_point);
 
     Ok(())
 }
